@@ -32,7 +32,7 @@ SELECT min(yearid) AS earliest_year, max(yearid) AS latest_year
 FROM teams;
 
 --Question 2: Find the shortest player in the database.  What team did he play for?
-SELECT DISTINCT p.namefirst, p.namelast, t.name
+SELECT DISTINCT p.namefirst, p.namelast, t.name AS team
 FROM people AS p
 JOIN appearances AS a
 ON p.playerid=a.playerid
@@ -43,7 +43,7 @@ WHERE height =
 	FROM people)
 
 --Question 3: Find players who played at Vanderbilt.  Show full name & salary earned.  Sort DESC by salary earned.
-SELECT p.namefirst, p.namelast, (SUM(s.salary)::numeric)::money AS total_salary
+SELECT p.namefirst AS "First Name", p.namelast AS "Last Name", (SUM(s.salary)::numeric)::money AS total_salary
 FROM people AS p
 JOIN salaries AS s
 ON p.playerid=s.playerid
@@ -78,7 +78,7 @@ SELECT CASE
 		WHEN yearid BETWEEN 1990 AND 1999 THEN '1990s'
 		WHEN yearid BETWEEN 2000 AND 2009 THEN '2000s'
 		WHEN yearid BETWEEN 2010 AND 2016 THEN '2010s' END AS decade,
-	   ROUND((AVG(t.so))/(AVG(t.g)),2)
+	   ROUND((AVG(t.so))/(AVG(t.g)),2) AS Ks_per_game
 FROM teams AS t
 WHERE yearid > 1919
 GROUP BY decade
@@ -96,7 +96,7 @@ SELECT CASE
 		WHEN yearid BETWEEN 1990 AND 1999 THEN '1990s'
 		WHEN yearid BETWEEN 2000 AND 2009 THEN '2000s'
 		WHEN yearid BETWEEN 2010 AND 2016 THEN '2010s' END AS decade,
-	   ROUND((AVG(t.hr))/(AVG(t.g)),2)
+	   ROUND((AVG(t.hr))/(AVG(t.g)),2) AS hrs_per_game
 FROM teams AS t
 WHERE yearid > 1919
 GROUP BY decade
@@ -104,7 +104,7 @@ ORDER BY decade
 
 --Question 6:  Find highest successful stolen base percentage among players with at least 20 attempts.
 --Stolen Base Percentage = sb / (sb + cs)
-SELECT p.namefirst, p.namelast,
+SELECT p.namefirst AS "First Name", p.namelast AS "Last Name",
 	   ROUND((AVG(sb) / AVG(sb + cs)),3) AS sb_percentage
 FROM batting
 JOIN people AS p
