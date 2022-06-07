@@ -1,0 +1,64 @@
+
+select count(distinct year)
+FROM homegames
+
+select g
+FROM managershalf
+
+----Q1FROM people
+SELECT distinct year
+FROM homegames  
+order by year
+
+
+---Q2
+SELECT  people.namefirst, teams.name, sum(teams.g),   people.height 
+from appearances as ap  inner join teams on ap.teamid = teams.teamid
+inner join people on ap.playerid = people.playerid
+where height  = 43
+GROUP by   people.namefirst, people.height, teams.name
+order by people.height
+
+
+SELECT namefirst, MIN(pp.height), sum(teams.g), teams.name
+FROM people as PP  inner join managershalf as msh on pp.playerid = msh.playerid
+left join teams on msh.yearid = teams.yearid
+where pp.height = 43
+GROUP by namefirst, height, name
+order by namefirst
+
+
+
+
+SELECT  pp.namefirst, teams.name,  height, sum(teams.g)
+FROM people as pp inner join appearances as app on  pp.playerid = app.playerid
+inner join teams on app.teamid = teams.teamid
+where height = 43	
+GROUP by namefirst, height, name
+
+/*WITH short_player as (SELECT namefirst, height, playerid
+  					  FROM people 
+					  GROUP by namefirst, playerid
+					 order by height) 		  
+SELECT  sp.namefirst, teams.name, sum(teams.g), sp.height
+		FROM appearances as ap full join short_player as sp on ap.playerid = sp.playerid 
+		Inner   join teams on ap.yearid = teams.yearid 
+		where height = 43  
+		GROUP by sp.height, sp.namefirst,teams.name,teams.g
+		order by height */
+	
+SELECT sum(fd.sb) as total_sb, yearid, fd.playerid, pp.namefirst
+FROM fielding  as fd inner join people as pp using(playerid)
+where sb >= 20 and yearid = '2016'
+GROUP by yearid, playerid, pp.namefirst 
+Order by total_sb desc
+
+
+/*SELECT *, sum (sb) over()::decimal, ROUND((sb/(sum (sb) over())::decimal)*100, 2)
+FROM fielding 
+where sb >= 20 and yearid = '2016' 
+GROUP by yearid, playerid, sb, stint, teamid, lgid, pos
+order by total_sb desc*/
+						
+
+ 
