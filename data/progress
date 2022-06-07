@@ -1,10 +1,4 @@
 
-select count(distinct year)
-FROM homegames
-
-select g
-FROM managershalf
-
 ----Q1FROM people
 SELECT distinct year
 FROM homegames  
@@ -12,53 +6,24 @@ order by year
 
 
 ---Q2
-SELECT  people.namefirst, teams.name, sum(teams.g),   people.height 
+SELECT  people.namefirst, people.namelast, teams.name as team_name, ap.g_all as number_of_games,   people.height 
 from appearances as ap  inner join teams on ap.teamid = teams.teamid
 inner join people on ap.playerid = people.playerid
 where height  = 43
-GROUP by   people.namefirst, people.height, teams.name
+GROUP by   people.namefirst, people.height, teams.name, people.namelast, ap.g_all
 order by people.height
-
-
-/*SELECT namefirst, MIN(pp.height), sum(teams.g), teams.name
-FROM people as PP  inner join managershalf as msh on pp.playerid = msh.playerid
-left join teams on msh.yearid = teams.yearid
-where pp.height = 43
-GROUP by namefirst, height, name
-order by namefirst*/
 
 
 
 --Q6
-SELECT  pp.namefirst, teams.name,  height, sum(teams.g)
-FROM people as pp inner join appearances as app on  pp.playerid = app.playerid
-inner join teams on app.teamid = teams.teamid
-where height = 43	
-GROUP by namefirst, height, name
 
-/*WITH short_player as (SELECT namefirst, height, playerid
-  					  FROM people 
-					  GROUP by namefirst, playerid
-					 order by height) 		  
-SELECT  sp.namefirst, teams.name, sum(teams.g), sp.height
-		FROM appearances as ap full join short_player as sp on ap.playerid = sp.playerid 
-		Inner   join teams on ap.yearid = teams.yearid 
-		where height = 43  
-		GROUP by sp.height, sp.namefirst,teams.name,teams.g
-		order by height */ 
-	
-SELECT (sb + cs) as total_stealing, yearid, fd.playerid, pp.namefirst,  sb/(sb)
+SELECT pp.namefirst, PP.namelast,  yearid,  (sb + cs) as total_stealing, ROUND((sb::decimal/(sb+cs)::decimal*100),2) as sb_success_percent
 FROM batting as fd inner join people as pp using(playerid)
 where sb >= 20 and yearid = '2016'
-GROUP by yearid, playerid, pp.namefirst, sb, cs
-Order by total_stealing desc
+GROUP by yearid, playerid, pp.namefirst, sb, cs, pp.namelast
+Order by  sb_success_percent desc
+LIMIT 5;
 
 
-/*SELECT *, sum (sb) over()::decimal, ROUND((sb/(sum (sb) over())::decimal)*100, 2)
-FROM fielding 
-where sb >= 20 and yearid = '2016' 
-GROUP by yearid, playerid, sb, stint, teamid, lgid, pos
-order by total_sb desc*/
-						
 
  
