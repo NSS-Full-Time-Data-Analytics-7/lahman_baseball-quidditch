@@ -150,23 +150,32 @@ ORDER BY aw.yearid DESC;
 
 
 --Question 10:  Find all players who hit their career highest # of HRs in 2016.  Consider only players who have played at least 10 years.
-
-WITH a AS (SELECT b.playerid,
-		  ((p.finalgame::date)-(p.debut::date))/365 AS years_played
-		  FROM people AS p INNER JOIN batting AS b USING(playerid)),
-	 b AS (SELECT DISTINCT playerid, MAX(hr) AS most_hr
-			FROM batting
-			GROUP BY playerid)
-SELECT DISTINCT CONCAT(p.namefirst,' ',p.namelast) AS full_name, hr AS home_runs
-FROM a INNER JOIN b USING(playerid)
-	   INNER JOIN people AS p USING (playerid)
-	   INNER JOIN batting USING (playerid)
-WHERE a.years_played > 9
-	AND hr > 0
-	AND yearid = 2016
-	AND most_hr = hr
-ORDER BY home_runs DESC;
-
+SELECT CONCAT(p.namefirst, ' ', p.namelast) AS "Player name", MAX(b.hr)
+FROM people AS p
+JOIN batting AS b USING (playerid)
+WHERE p.playerid IN
+	--most career homeruns per player
+	(WITH most AS (SELECT p.playerid, MAX(hr) AS most_hrs
+				  FROM batting AS b
+				  JOIN people AS p USING (playerid)
+				  GROUP BY p.playerid
+				  ORDER BY most_hrs DESC),
+	 --homeruns per player in 2016
+	sixteen AS (SELECT p.playerid, b.hr AS hr_2016
+					FROM people AS p
+					JOIN batting AS b USING (playerid)
+					WHERE yearid = 2016
+					ORDER BY b.hr DESC),
+	a AS (SELECT b.playerid,
+		 ((p.finalgame::date)-(p.debut::date))/365 AS years_played
+		  FROM people AS p INNER JOIN batting AS b USING(playerid))
+	SELECT DISTINCT most.playerid FROM most
+	JOIN sixteen ON most.playerid = sixteen.playerid
+	JOIN a ON sixteen.playerid = a.playerid
+	WHERE most_hrs = hr_2016 AND years_played > 9 AND most.most_hrs > 0
+	)
+GROUP BY p.namefirst, p.namelast
+ORDER BY MAX(b.hr) DESC;
 
 /* ****MOST CAREER HOMERUNS FOR EACH PLAYER**********
 SELECT p.namefirst, p.namelast, MAX(hr) AS most_hrs
