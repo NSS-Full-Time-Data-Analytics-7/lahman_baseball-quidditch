@@ -1,9 +1,7 @@
 
 ----Q1FROM people
-SELECT distinct year
-FROM homegames  
-order by year
-
+SELECT min(yearid) AS earliest_year, max(yearid) AS latest_year
+FROM teams;
 
 ---Q2
 SELECT  people.namefirst, people.namelast, teams.name as team_name, ap.g_all as number_of_games,   people.height 
@@ -13,17 +11,108 @@ where height  = 43
 GROUP by   people.namefirst, people.height, teams.name, people.namelast, ap.g_all
 order by people.height
 
+---Q3
 
+SELECT distinct namefirst|| ' ' ||namelast AS full_name, sum(sal.salary::numeric::money) as total_salary, clp.playerid, clp.yearid 
+FROM CollegePlaying as clp 
+	JOIN Schools as sch using(schoolid)
+	JOIN people as pp on clp.playerid = pp.playerid
+	INNER JOIN salaries as sal on pp.playerid = sal.playerid
+	JOIN homegames as hg on clp.yearid = hg.year
+WHERE schoolname = 'Vanderbilt University' and sal.salary is not null 
+GROUP BY pp.namefirst, pp.namelast, sal.salary,clp.playerid, clp.yearid 
+ORDER BY total_salary desc
 
 --Q6
 
+
 SELECT pp.namefirst, PP.namelast,  yearid,  (sb + cs) as total_stealing, ROUND((sb::decimal/(sb+cs)::decimal*100),2) as sb_success_percent
 FROM batting as fd inner join people as pp using(playerid)
-where sb >= 20 and yearid = '2016'
+where (sb+cs) >= 20 and yearid = '2016'
 GROUP by yearid, playerid, pp.namefirst, sb, cs, pp.namelast
 Order by  sb_success_percent desc
 LIMIT 5;
+-- Q7
+
+WITH team_win AS (SELECT teamidwinner, round, sum(wins) AS total_wins, yearid
+				  FROM SeriesPost 
+				  where round <> 'WS'
+				  GROUP BY teamidwinner, round, yearid
+				  ORDER BY total_wins desc),
+
+ws_lose AS (SELECT teamidloser, round, yearid
+			FROM SeriesPost 
+			WHERE round = 'WS')
+SELECT tw.teamidwinner, tw.total_wins, tw.yearid
+FROM team_win AS tw JOIN ws_lose AS wl  using(yearid)
+WHERE yearid in ('1970','2016')
+GROUP by tw.teamidwinner, tw.total_wins, tw.yearid
+ORDER BY tw.total_wins desc
 
 
 
- 
+SELECT teamidwinner, wins 
+FROM SeriesPost 
+WHERE teamidwinner in (select teamidwinner FROMSeriesPost   where round = 'WS' )
+ORDER BY wins
+
+
+
+--Q9
+/*SELECT DISTINCT CONCAT (pp.namefirst,' ',pp.namelast) AS full_name, teams.name AS team_name,am.playerid, am.awardid, am.lgid, am2.lgid, app.teamid, app.yearID
+FROM AwardsManagers as am 
+		INNER JOIN AwardsManagers as am2 USING(playerid)
+		INNER JOIN people AS pp on am.playerid = pp.playerid 
+		INNER JOIN appearances AS app on pp.playerid = app.playerid
+		INNER JOIN  teams on app.teamid = teams.teamid 
+WHERE am.awardid = 'TSN Manager of the Year' 
+		AND  am.lgid = 'AL' AND am2.lgid = 'NL'
+GROUP BY  am.playerid,  am.awardid, am.lgid, am2.lgid, pp.namefirst,  pp.namelast, app.teamid, app.yearid, teams.name
+ORDER BY  app.yearid;*/
+
+
+
+WITH lgid_Al AS (SELECT lgid as la_leagu, awardid as la_award, playerid, yearid as al_year
+				FROM AwardsManagers
+				WHERE lgid = 'AL' AND awardid = 'TSN Manager of the Year'),
+lgid_NL AS  (SELECT lgid AS nl_leagu, awardid as nl_award, playerid, yearid as nl_year
+				FROM AwardsManagers AS aw
+				WHERE lgid = 'NL'AND awardid = 'TSN Manager of the Year')
+SELECT distinct CONCAT(pp.namefirst,' ', pp.namelast) AS full_name, name,al_l.la_award,al_l.la_leagu,al_l.al_year,nl_l.nl_award, nl_l.nl_leagu,nl_l.nl_year 
+FROM lgid_Al AS al_l INNER JOIN lgid_NL AS nl_l USING(playerid)
+JOIN teams on al_l.la_leagu = teams.lgid 
+JOIN people AS pp on  al_l.playerid = pp.playerid 
+--group By al_l.la_award, nl_l.nl_award,pp.namefirst,pp.namelast,  al_l.la_leagu,nl_l.nl_leagu, name, al_l.al_year,nl_l.nl_year 
+
+
+
+
+
+
+
+/*SELECT  la_al.lgid AS league , la_al.awardid AS award_won, la_nl.lgid AS league, la_nl.awardid AS award_won, CONCAT(pp.namefirst,' ', pp.namelast) AS full_name, teams.name AS team_name, app.yearid
+FROM   lgid_Al AS  la_al JOIN   lgid_NL AS la_nl ON la_al.playerid = la_nl.playerid
+				INNER JOIN  people AS pp ON la_al.playerid = pp.playerid 
+				INNER JOIN  appearances AS app ON pp.playerid = app.playerid
+				INNER JOIN  teams ON app.teamid = teams.teamid 
+GROUP BY  teams.name, la_al.lgid,la_al.awardid,  la_nl.lgid, la_nl.awardid, pp.namefirst,pp.namelast, app.yearid  
+ORDER BY  yearid;*/
+
+--Q10
+WITH a AS (SELECT b.playerid,
+		  ((p.finalgame::date)-(p.debut::date))/365 AS years_played
+		  FROM people AS p INNER JOIN batting AS b USING(playerid)),
+	 b AS (SELECT DISTINCT playerid, MAX(hr) AS most_hr
+			FROM batting
+			GROUP BY playerid)
+SELECT DISTINCT CONCAT(p.namefirst,' ',p.namelast) AS full_name, hr AS home_runs
+FROM a INNER JOIN b USING(playerid)
+	   INNER JOIN people AS p USING (playerid)
+	   INNER JOIN batting USING (playerid)
+WHERE a.years_played > 9
+	AND hr > 0
+	AND yearid = 2016
+	AND most_hr = hr
+ORDER BY home_runs DESC;
+
+
