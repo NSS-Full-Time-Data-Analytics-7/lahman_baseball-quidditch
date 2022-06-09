@@ -125,9 +125,8 @@ ORDER BY avg_attendance
 LIMIT 5;
 
 
-
 --Question 9:  Which managers have won the TSN manager of the year award in the NL & AL.  Give full name and teams they were managing when they won the award
-SELECT DISTINCT p.namefirst, p.namelast, m.teamid, aw.lgid, aw.yearid
+SELECT DISTINCT CONCAT(p.namefirst, ' ', p.namelast) AS manager_name, m.teamid, aw.lgid, aw.yearid
 FROM people AS p
 JOIN managers AS m USING (playerid)
 JOIN awardsmanagers AS aw USING (playerid)
@@ -145,25 +144,11 @@ WHERE playerid IN
 				GROUP BY p.playerid, aw.awardid, aw.lgid, aw.yearid
 				ORDER BY aw.yearid DESC)
 	SELECT DISTINCT nl.playerid FROM nl
-	JOIN al ON nl.playerid = al.playerid
-	WHERE aw.awardid LIKE 'TSN%')
+	JOIN al ON nl.playerid = al.playerid)
+AND aw.yearid = m.yearid
 GROUP BY p.namefirst, p.namelast, m.teamid, aw.lgid, aw.yearid
+ORDER BY manager_name, aw.yearid
 
-
-WITH nl AS (SELECT p.playerid, aw.awardid, aw.lgid, aw.yearid
-				FROM people AS p
-				JOIN awardsmanagers AS aw ON p.playerid=aw.playerid
-				WHERE aw.awardid LIKE 'TSN%' AND lgid = 'NL' 
-				GROUP BY p.playerid, aw.awardid, aw.lgid, aw.yearid
-				ORDER BY aw.yearid DESC),
-	al AS 	    (SELECT p.playerid, aw.awardid, aw.lgid, aw.yearid
-				FROM people AS p
-				JOIN awardsmanagers AS aw ON p.playerid=aw.playerid
-				WHERE aw.awardid LIKE 'TSN%' AND lgid = 'AL' 
-				GROUP BY p.playerid, aw.awardid, aw.lgid, aw.yearid
-				ORDER BY aw.yearid DESC)
-	SELECT DISTINCT nl.playerid FROM nl
-	JOIN al ON nl.playerid = al.playerid
 
 --Question 10:  Find all players who hit their career highest # of HRs in 2016.  Consider only players who have played at least 10 years.
 SELECT CONCAT(p.namefirst, ' ', p.namelast) AS "Player name", MAX(b.hr)
