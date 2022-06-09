@@ -3,7 +3,7 @@ SELECT min(yearid) AS earliest_year, max(yearid) AS latest_year
 FROM teams;
 
 --Question 2: Find the shortest player in the database.  What team did he play for?
-SELECT DISTINCT CONCAT(p.namefirst, ' ', p.namelast) AS name , t.name AS team
+SELECT DISTINCT CONCAT(p.namefirst, ' ', p.namelast) AS player_name , t.name AS team, a.g_all AS "Games Played"
 FROM people AS p
 JOIN appearances AS a
 ON p.playerid=a.playerid
@@ -107,29 +107,29 @@ WHERE w = most_wins AND wswin ='Y'
 
 --Question 8: Find teams and parks which had top 5 AVG attendance AND bottom 5 lowest attendance in 2016
 --TOP 5
-SELECT homegames.team, parks.park_name AS park_id,homegames.park, (homegames.attendance / homegames.games) AS avg_attendance
+SELECT homegames.team, parks.park_name AS park_name, (homegames.attendance / homegames.games) AS avg_attendance
 FROM homegames INNER JOIN parks USING(park)
 WHERE year = 2016
-GROUP BY homegames.team, homegames.park, parks.park_name,homegames.attendance, homegames.games
+GROUP BY homegames.team, parks.park_name,homegames.attendance, homegames.games
 HAVING games > 9
 ORDER BY avg_attendance DESC
 LIMIT 5;
 
 --BOTTOM 5
-SELECT homegames.team, parks.park_name AS park_id,homegames.park, (homegames.attendance / homegames.games) AS avg_attendance
+SELECT homegames.team, parks.park_name AS park_name, (homegames.attendance / homegames.games) AS avg_attendance
 FROM homegames INNER JOIN parks USING(park)
 WHERE year = 2016
-GROUP BY homegames.team, homegames.park, parks.park_name,homegames.attendance, homegames.games
+GROUP BY homegames.team, parks.park_name,homegames.attendance, homegames.games
 HAVING games > 9
 ORDER BY avg_attendance
 LIMIT 5;
 
 
 --Question 9:  Which managers have won the TSN manager of the year award in the NL & AL.  Give full name and teams they were managing when they won the award
-SELECT DISTINCT CONCAT(p.namefirst, ' ', p.namelast) AS manager_name, m.teamid, aw.lgid, aw.yearid
+SELECT DISTINCT CONCAT(p.namefirst, ' ', p.namelast) AS manager_name, m.teamid AS team, aw.lgid AS league, aw.yearid AS year
 FROM people AS p
 JOIN managers AS m USING (playerid)
-JOIN awardsmanagers AS aw USING (playerid)
+JOIN awardsmanagers AS aw USING (playerid, yearid) 
 WHERE playerid IN
 	(WITH nl AS (SELECT p.playerid, aw.awardid, aw.lgid, aw.yearid
 				FROM people AS p
@@ -145,13 +145,12 @@ WHERE playerid IN
 				ORDER BY aw.yearid DESC)
 	SELECT DISTINCT nl.playerid FROM nl
 	JOIN al ON nl.playerid = al.playerid)
-AND aw.yearid = m.yearid
+AND aw.yearid = m.yearid 
 GROUP BY p.namefirst, p.namelast, m.teamid, aw.lgid, aw.yearid
 ORDER BY manager_name, aw.yearid
 
-
 --Question 10:  Find all players who hit their career highest # of HRs in 2016.  Consider only players who have played at least 10 years.
-SELECT CONCAT(p.namefirst, ' ', p.namelast) AS "Player name", MAX(b.hr)
+SELECT CONCAT(p.namefirst, ' ', p.namelast) AS "Player name", MAX(b.hr) AS career_high_hrs
 FROM people AS p
 JOIN batting AS b USING (playerid)
 WHERE p.playerid IN
@@ -178,46 +177,20 @@ WHERE p.playerid IN
 GROUP BY p.namefirst, p.namelast
 ORDER BY MAX(b.hr) DESC;
 
-/* ****MOST CAREER HOMERUNS FOR EACH PLAYER**********
-SELECT p.namefirst, p.namelast, MAX(hr) AS most_hrs
-FROM batting AS b
-JOIN people AS p USING (playerid)
-GROUP BY p.namelast,p.namefirst
-ORDER BY most_hrs DESC
-*/
-
-/* **********HRS for Each Player in 2016***********
-SELECT p.namefirst, p.namelast, b.hr
-FROM people AS p
-JOIN batting AS b USING (playerid)
-WHERE yearid = 2016
-ORDER BY b.hr DESC
- */
+--Question 11: Any correlation between # of wins and team salary? Use data from 2000 and later. May want to look on a year by year basis.
+SELECT t.yearid, t.name, t.w, (SUM(s.salary)::numeric)::money
+FROM teams AS t
+JOIN salaries AS s USING (teamid, yearid)
+WHERE t.yearid >= 2000
+GROUP BY t.yearid, t.name, t.w
+ORDER BY t.yearid, t.name
 
 
 
-/*
-SELECT p.playerid, p.namefirst, p.namelast, most_hrs	
-FROM people AS p
-INNER JOIN (SELECT p.playerid, p.namefirst, p.namelast, MAX(hr) AS most_hrs
-	 		FROM batting AS b
-	 		JOIN people AS p USING (playerid)
-			GROUP BY p.playerid, p.namelast,p.namefirst
-	 		ORDER BY most_hrs DESC) AS sub
-ON p.playerid=sub.playerid
+--Question 12: Any correlation between # of wins and home attendance? Do teams who win the world series see a boost in attendance the following year?
 
-SELECT b.playerid, p.namefirst, p.namelast, MAX(hr) AS max_hr
-FROM batting AS b INNER JOIN people AS p USING(playerid)
-				  INNER JOIN (SELECT playerid, yearid, MAX(hr) AS most_hrs
-					  		FROM batting
-						    GROUP BY playerid, yearid, hr
-							ORDER BY hr DESC) AS max_career_hr USING (playerid)						
-WHERE b.yearid=2016 AND EXTRACT(year FROM p.debut::date) <= 2006
-GROUP BY b.playerid, p.namefirst, p.namelast, most_hrs, b.hr
-HAVING SUM(hr) > 0
-AND most_hrs = hr
-ORDER BY max_hr DESC
-*/
+
+--Question 13: How rare are left handed pitchers compared to right handed pitches? Are lefties more likely to win the Cy Young Award?  More like to make HOF?
 
 SELECT * FROM allstarfull;
 SELECT * FROM appearances;
