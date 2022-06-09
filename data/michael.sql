@@ -118,6 +118,33 @@ HAVING games > 9
 ORDER BY avg_attendance
 LIMIT 5;
 
+
+--Q9. Seth's Code
+--Question 9:  Which managers have won the TSN manager of the year award in the NL & AL.  
+--Give full name and teams they were managing when they won the award
+SELECT DISTINCT CONCAT(p.namefirst, ' ', p.namelast) AS manager_name, m.teamid, aw.lgid, aw.yearid
+FROM people AS p
+JOIN managers AS m USING (playerid)
+JOIN awardsmanagers AS aw USING (playerid)
+WHERE playerid IN
+	(WITH nl AS (SELECT p.playerid, aw.awardid, aw.lgid, aw.yearid
+				FROM people AS p
+				JOIN awardsmanagers AS aw ON p.playerid=aw.playerid
+				WHERE aw.awardid LIKE 'TSN%' AND lgid = 'NL' 
+				GROUP BY p.playerid, aw.awardid, aw.lgid, aw.yearid
+				ORDER BY aw.yearid DESC),
+	al AS 	    (SELECT p.playerid, aw.awardid, aw.lgid, aw.yearid
+				FROM people AS p
+				JOIN awardsmanagers AS aw ON p.playerid=aw.playerid
+				WHERE aw.awardid LIKE 'TSN%' AND lgid = 'AL' 
+				GROUP BY p.playerid, aw.awardid, aw.lgid, aw.yearid
+				ORDER BY aw.yearid DESC)
+	SELECT DISTINCT nl.playerid FROM nl
+	JOIN al ON nl.playerid = al.playerid)
+AND aw.yearid = m.yearid
+GROUP BY p.namefirst, p.namelast, m.teamid, aw.lgid, aw.yearid
+ORDER BY manager_name, aw.yearid
+
 /*Q10. Find all players who hit their career highest number of home runs in 2016. 
 Consider only players who have played in the league for at least 10 years, 
 and who hit at least one home run in 2016. Report the players' first and last names 
@@ -131,7 +158,7 @@ WITH a AS (SELECT b.playerid,
 	 b AS (SELECT DISTINCT playerid, MAX(hr) AS most_hr
 			FROM batting
 			GROUP BY playerid)
-SELECT DISTINCT CONCAT(p.namefirst,' ',p.namelast) AS full_name, hr AS home_runs
+SELECT DISTINCT CONCAT(p.namefirst,' ',p.namelast) AS player_name, hr AS home_runs
 FROM a INNER JOIN b USING(playerid)
 	   INNER JOIN people AS p USING (playerid)
 	   INNER JOIN batting USING (playerid)
@@ -141,9 +168,36 @@ WHERE a.years_played > 9
 	AND most_hr = hr
 ORDER BY home_runs DESC;
 
-SELECT DISTINCT playerid, MAX(hr) AS most_hr
-FROM batting
-GROUP BY playerid
+
+--Seth's code for q10
+
+
+SELECT CONCAT(p.namefirst, ' ', p.namelast) AS "Player name", MAX(b.hr)
+FROM people AS p
+JOIN batting AS b USING (playerid)
+WHERE p.playerid IN
+	--most career homeruns per player
+	(WITH most AS (SELECT p.playerid, MAX(hr) AS most_hrs
+				  FROM batting AS b
+				  JOIN people AS p USING (playerid)
+				  GROUP BY p.playerid
+				  ORDER BY most_hrs DESC),
+	 --homeruns per player in 2016
+	sixteen AS (SELECT p.playerid, b.hr AS hr_2016
+					FROM people AS p
+					JOIN batting AS b USING (playerid)
+					WHERE yearid = 2016
+					ORDER BY b.hr DESC),
+	a AS (SELECT b.playerid,
+		 ((p.finalgame::date)-(p.debut::date))/365 AS years_played
+		  FROM people AS p INNER JOIN batting AS b USING(playerid))
+	SELECT DISTINCT most.playerid FROM most
+	JOIN sixteen ON most.playerid = sixteen.playerid
+	JOIN a ON sixteen.playerid = a.playerid
+	WHERE most_hrs = hr_2016 AND years_played > 9 AND most.most_hrs > 0
+	)
+GROUP BY p.namefirst, p.namelast
+ORDER BY MAX(b.hr) DESC;
 
 
 
